@@ -1,0 +1,156 @@
+# ApexPredator ZMK configuration
+
+This repository contains an out-of-tree Zephyr board/shield pair for an FDK
+HY0020 (nRF52832) keyboard controller.
+
+## HY0020 build target
+
+- Zephyr board name: `hy0020`
+- Hardware Model v2 target: `hy0020/nrf52832`
+- Left split peripheral shield: `apex_predetor_left`
+- Right split peripheral shield: `apex_predetor_right`
+- SoC: Nordic nRF52832 QFAA, Cortex-M4F, 512 KiB flash, 64 KiB SRAM
+- Firmware transport: Bluetooth LE only
+- Programming: direct SWD; no USB and no bootloader
+
+Both HY0020 targets are BLE split peripherals. `apex_predetor_left` is the left
+half and `apex_predetor_right` is the right half. The original
+`hy0020_test` shield remains available as the known-working bring-up baseline.
+
+## MDBT50Q dongle target
+
+The production build uses an MDBT50Q-RX as a keyless split central and two
+HY0020 modules as its BLE peripherals. All three images use the same 5x14
+logical transform, physical layout, and 70-position diagnostic keymap.
+
+- Dongle board: `mdbt50q_rx`
+- Dongle shield: `apex_predetor_dongle`
+- Left board/shield: `hy0020/nrf52832` with `apex_predetor_left`
+- Right board/shield: `hy0020/nrf52832` with `apex_predetor_right`
+- Host transport from the dongle: USB or BLE
+- Split transport from the HY0020: BLE
+
+The dongle uses ZMK's mock kscan driver and therefore claims no MDBT50Q GPIOs.
+Before pairing this new central/peripheral combination, flash the matching
+`settings_reset` image to both devices to clear stale split bonds.
+
+## Versions and reference boards
+
+`config/west.yml` tracks ZMK `main`. At the time this board was added, ZMK
+`main` selected the ZMK Zephyr fork revision `v4.1.0+zmk-fixes` in
+`app/west.yml`. This is Zephyr Hardware Model v2, so the HY0020 board uses
+`board.yml`, an SoC qualifier, and qualifier-specific DTS/defconfig files.
+
+The board structure and nRF52832 SoC selection were based on these Zephyr 4.1
+boards:
+
+- `zephyr/boards/nordic/nrf52dk`: `board.yml`, `Kconfig.nrf52dk`, and the
+  `nrf52dk_nrf52832` DTS/defconfig
+- `zephyr/boards/nordic/thingy52`: a single-module nRF52832 board using the
+  `nrf52832` qualifier
+- `zephyr/dts/arm/nordic/nrf52832_qfaa.dtsi`: SoC flash, SRAM, GPIO, clock,
+  radio, UICR, and debug hardware
+
+No nRF52840 board definition, legacy Hardware Model v1 board, UF2 definition,
+or bootloader partition was copied.
+
+## Clock and power configuration
+
+HY0020 is specified with a 32 MHz high-frequency crystal and a 32.768 kHz
+low-frequency crystal. The board enables the Nordic clock node and selects
+`CONFIG_CLOCK_CONTROL_NRF_K32SRC_XTAL=y`. The high-frequency radio clock uses
+the SoC HFXO path. `NRF5X_REG_MODE_LDO` explicitly keeps the initial build in
+LDO mode; the derived `SOC_DCDC_NRF52X` Kconfig symbol is not assigned directly.
+
+P0.21 is configured as nRESET through UICR. SWDIO and SWDCLK are dedicated
+debug pads controlled by the Arm debug port and are deliberately not claimed
+as GPIO devices in Devicetree. NFC is disabled; P0.09/P0.10 are not used by
+the initial shield.
+
+## Flash layout
+
+| Address range | Size | Purpose |
+|---|---:|---|
+| `0x00000000`–`0x00077FFF` | 480 KiB | ZMK application (`image-0`) |
+| `0x00078000`–`0x0007FFFF` | 32 KiB | ZMK Bluetooth/settings storage |
+
+`zephyr,code-partition` points to `image-0`, whose address is zero. There is
+no bootloader offset, secondary image slot, USB DFU partition, or UF2 image.
+
+## Matrix wiring
+
+The diode direction is `col2row`. Every number below is an explicit Nordic
+GPIO0 pin number.
+
+| Half | Columns | Rows |
+|---|---|---|
+| Left | P0.30, P0.02, P0.03, P0.04, P0.06, P0.07 | P0.16, P0.18, P0.20, P0.12, P0.30 |
+| Right | P0.02, P0.03, P0.04, P0.05, P0.06, P0.08, P0.07, P0.12 | P0.16, P0.18, P0.20, P0.28, P0.30 |
+
+The left half occupies logical columns 0–5 and the right half uses a column
+offset of 6, occupying columns 6–13. Note that the supplied left wiring assigns
+P0.30 to both col0 and row4; those signals need distinct GPIO pins for a usable
+matrix.
+
+## Local pristine build
+
+Run these commands from this repository. They initialize a west workspace in
+the repository and download the ZMK/Zephyr projects selected by the manifest.
+
+```sh
+west init -l config
+west update
+west zephyr-export
+west build -p always -s zmk/app -d build/apex_predetor \
+  -b hy0020/nrf52832 -- \
+  -DZMK_CONFIG="$PWD/config" \
+  -DZMK_EXTRA_MODULES="$PWD" \
+  -DSHIELD=apex_predetor_left
+```
+
+The optional split peripheral build is:
+
+```sh
+west build -p always -s zmk/app -d build/apex_predetor_right \
+  -b hy0020/nrf52832 -- \
+  -DZMK_CONFIG="$PWD/config" \
+  -DZMK_EXTRA_MODULES="$PWD" \
+  -DSHIELD=apex_predetor_right
+```
+
+Expected direct-programming output:
+
+```text
+build/apex_predetor/zephyr/zmk.hex
+```
+
+The `build.yaml` matrix and `.github/workflows/build.yml` workflow build the
+HY0020 targets. The reusable action is configured with `fallback_binary: hex`,
+so its merged `hy0020-firmware` artifact contains the generated HEX files.
+
+## SWD programming with a Raspberry Pi Pico probe
+
+Flash the Pico with Raspberry Pi Debug Probe/CMSIS-DAP firmware, then connect
+SWDIO, SWDCLK, GND, and VTREF/3.3 V as appropriate for the test board. Do not
+power the target from two supplies simultaneously.
+
+With OpenOCD and a CMSIS-DAP Pico probe:
+
+```sh
+openocd -f interface/cmsis-dap.cfg -f target/nrf52.cfg \
+  -c "adapter speed 1000" \
+  -c "program build/apex_predetor/zephyr/zmk.hex verify reset exit"
+```
+
+For older Picoprobe firmware/OpenOCD packages, replace the interface file with
+`interface/picoprobe.cfg`. A mass erase is not part of the normal update command;
+use one only when protection or stale settings specifically require it.
+
+## Bring-up checks still requiring hardware
+
+- Confirm the HY0020 module variant really populates both specified crystals.
+- Confirm P0.21 is physically connected to the module reset pad before writing
+  UICR reset configuration.
+- Verify diode polarity on the assembled matrix matches `col2row`.
+- Measure BLE operation and matrix scanning on the 3.0–3.3 V test board before
+  enabling DC/DC or optimizing power consumption.
