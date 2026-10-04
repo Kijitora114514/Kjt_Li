@@ -1,6 +1,10 @@
-# Kjt_Li
+Kjt_Li
 
-Experimental out-of-tree ZMK/Zephyr board module for the FDK HY0020 nRF52832 BLE module.
+This repository is basically a storage space for my various projects.
+
+For now, it mainly contains an experimental out-of-tree ZMK/Zephyr board module for the FDK HY0020 nRF52832 BLE module.
+
+Other modules, features, or random things may be added here in the future.
 
 ## What Is HY0020?
 
