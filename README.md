@@ -54,6 +54,19 @@ include:
 
 HY0020 has no USB interface in this board definition, so it is intended for BLE builds and SWD flashing.
 
+If you build HY0020 firmware with GitHub Actions, make sure your `zmk-config` workflow asks ZMK's reusable workflow to keep `.hex` output. This module only provides the board definition; it does not control artifact packaging in repositories that consume it.
+
+```yaml
+jobs:
+  build:
+    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@v0.3
+    with:
+      build_matrix_path: build.yaml
+      fallback_binary: hex
+```
+
+Without `fallback_binary: hex`, another repository may be able to build HY0020 successfully but still not include the `.hex` file in the downloaded artifact ZIP.
+
 ## Flash Layout
 
 HY0020 uses the nRF52832 QFAA 512 KiB internal flash.
