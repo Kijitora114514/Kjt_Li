@@ -125,14 +125,12 @@ This is experimental support. The board definition has been tested with a specif
 
 Real-device test reports, fixes, and issues are welcome.
 
+## Maintenance
+
+I may update this project when I feel like it. Or I may not.
+
+Hopefully, someone smarter than me will come along and improve it.
+
 ## License
 
-No license has been selected yet. Do not assume this repository is open source until a LICENSE file is added.
-
-Recommended candidates:
-
-- MIT: short, permissive, and common for small ZMK modules.
-- Apache-2.0: permissive, includes explicit patent language, and is common in Zephyr-related projects.
-- BSD-3-Clause: permissive and simple, also familiar in embedded projects.
-
-Choose one before publishing the repository for reuse.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
