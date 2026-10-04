@@ -1,6 +1,18 @@
-name: Build ZMK firmware
+name: Build HY0020 board module
+
 on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: Kjt_Li-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@v0.3
+    with:
+      build_matrix_path: build.yaml
+      fallback_binary: hex
+      archive_name: Kjt_Li

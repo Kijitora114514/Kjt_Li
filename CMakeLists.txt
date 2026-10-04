@@ -1,0 +1,1 @@
+# This module only provides an out-of-tree board definition.
