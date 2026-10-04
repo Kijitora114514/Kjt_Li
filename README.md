@@ -54,7 +54,7 @@ include:
 
 HY0020 has no USB interface in this board definition, so it is intended for BLE builds and SWD flashing.
 
-If you build HY0020 firmware with GitHub Actions, make sure your `zmk-config` workflow asks ZMK's reusable workflow to keep `.hex` output. This module only provides the board definition; it does not control artifact packaging in repositories that consume it.
+If you build HY0020 firmware with GitHub Actions, make sure your `zmk-config` workflow asks ZMK's reusable workflow to keep `.hex` output. This module only provides the board definition; it does not control artifact packaging in repositories that consume it. The build file should be somewhere around `.github/workflows/build.yml`.
 
 ```yaml
 jobs:
