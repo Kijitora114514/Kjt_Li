@@ -25,8 +25,8 @@ manifest:
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
-    - name: Kjt_Li
-      url-base: https://github.com/Kjt_Li
+    - name: kijitora114514
+      url-base: https://github.com/Kijitora114514
 
   projects:
     - name: zmk
@@ -34,7 +34,7 @@ manifest:
       revision: main
       import: app/west.yml
     - name: Kjt_Li
-      remote: Kjt_Li
+      remote: kijitora114514
       revision: main
 
   self:
